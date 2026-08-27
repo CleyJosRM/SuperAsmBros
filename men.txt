@@ -1,0 +1,163 @@
+Memory
+
+store address, rx 110001*address = rx
+
+storei rx, ry 111101**rx = ry
+
+load rx, address 110000 rx = *address
+
+loadi rx, ry 111100 rx = **ry
+
+loadn rx, #number 111000 rx = number
+
+Move
+
+mov rx, ry 110011 rx = ry
+
+mov rx, sp 110011 rx = sp
+
+mov sp, rx 110011 sp = rx
+
+Arithmetic
+
+add rx, ry, rz 100000 rx = ry + rz
+
+addc rx, ry, rz 100000 rx = ry + rz + carry
+
+sub rx, ry, rz 100001 rx = ry - rz
+
+subc rx, ry, rz 100001 rx = ry - rz + carry
+
+mul rx, ry, rz 100010 rx = ry * rz
+
+mulc rx, ry, rz 100010 rx = ry * rz + carry
+
+div rx, ry, rz 100011 rx = ry / rz
+
+divc rx, ry, rz 100011 rx = ry / rz + carry
+
+mod rx, ry, rz 100101 rx = ry % rz
+
+inc rx 100100 rx++
+
+dec rx 100100 rx--
+
+Logic
+
+and rx, ry, rz 010010 rx = ry & rz
+
+or rx, ry, rz 010011 rx = ry | rz
+
+xor rx, ry, rz 010100 rx = ry ^ rz
+
+not rx, ry 010101 rx = ~ry
+
+rotl rx, #bits 010000
+
+rotr rx, #bits 010000
+
+shiftl0 rx, #bits 010000 rx = rx << bits
+
+shiftl1 rx, #bits 010000 rx = rx << bits | (1 << bits - 1)
+
+shiftr0 rx, #bits 010000 rx = rx >> bits
+
+shiftr1 rx, #bits 010000 rx = rx >> bits | (0xFFFF >> bits << bits)
+
+cmp rx, ry 010110
+
+IO
+
+inchar rx 110101
+
+outchar rx, ry 110010
+
+Jump
+
+jmp address 000010
+
+jeq address 000010
+
+jne address 000010
+
+jz address 000010
+
+jnz address 000010
+
+jc address 000010
+
+jnc address 000010
+
+jgr address 000010
+
+jle address 000010
+
+jeg address 000010
+
+jel address 000010
+
+jov address 000010
+
+jnov address 000010
+
+jn address 000010
+
+jdz address 000010
+
+Call
+
+call address 000011 address()
+
+ceq address 000011 if (eq) address()
+
+cne address 000011 if (ne) address()
+
+cz address 000011 if (z) address()
+
+cnz address 000011 if (nz) address()
+
+cc address 000011 if (c) address()
+
+cnc address 000011 if (nc) address()
+
+cgr address 000011 if (gr) address()
+
+cle address 000011 if (le) address()
+
+ceg address 000011 if (eg) address()
+
+cel address 000011 if (el) address()
+
+cov address 000011 if (ov) address()
+
+cnov address 000011 if (nov) address()
+
+cn address 000011 if (n) address()
+
+cdz address 000011 if (dz) address()
+
+rts 000100 return
+
+Stack
+
+push rx 000101
+
+push fr 000101
+
+pop rx 000110
+
+pop fr 000110
+
+Control
+
+clearc 001000
+
+setc 001000
+
+halt 001111
+
+nop 000000
+
+breakp 001110
+
+
