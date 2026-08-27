@@ -6,6 +6,11 @@ Planejamos programar um plataformer 2D old-school, inspirado no Super Mario Bros
 
 ## Requisitos
 Para um plataformer funcional, precisamos de algumas funcionalidades:
-- A
-- B
-- C
+- Movimentação.
+- Colisão (Personagem, inimigos, coletáveis).
+- **Divisão de Char entre dois espaços** (Necessário pra fluidez pois movimentção em um espaço 40x30 é muito ruim).
+- Se tivermos uma maior competência, **aumentar a resolução da tela**.
+- Física para pulo/queda, tanto para personagens quanto para bola de fogo (possível que seja reciclável).
+- Tempo e pontuação.
+- Câmera.
+- *Morte*.
