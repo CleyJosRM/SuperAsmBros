@@ -14,3 +14,8 @@ Para um plataformer funcional, precisamos de algumas funcionalidades:
 - Tempo e pontuação.
 - Câmera.
 - *Morte*.
+
+## Convenções
+Definir padrões de registradores usados, retorno de funções e outras características para facilitar a paralelização do desenvolvimento das funcionalidades do jogo.
+
+**Convenção:** combinar com todo mundo.
