@@ -27,7 +27,6 @@ render_frame:
 ; - Nunca usa div/mod por tile.
 ; - Percorre 30 linhas x 40 colunas com ponteiros incrementais.
 ; - camera_x aponta para a janela do mapa; map_width pode ser N > 40.
-; - Cada linha do mapa possui map_width caracteres + terminador.
 ; -----------------------------------------------------------------------
 render_background:
     push r0
@@ -63,7 +62,6 @@ render_bg_col:
     cmp r1, r3
     jeg render_bg_blank
 
-    ; Tile valido: escreve diretamente no endereco da ROM.
     loadi r3, r2
     outchar r3, r5
     inc r2
@@ -83,7 +81,6 @@ render_bg_next:
 
     ; Avanca para a proxima linha do mapa.
     ; O ponteiro da linha e preservado para que a largura da janela (40)
-    ; nao interfira no stride real N+1 do mapa.
     load r2, render_row_ptr
     load r3, map_stride
     add r2, r2, r3
@@ -133,7 +130,15 @@ render_player_y_ok:
     loadn r1, #40
     mul r1, r3, r1
     add r1, r1, r2
-    loadn r0, #'@'
+    load r0, player_facing
+    loadn r2, #0
+    cmp r0, r2
+    jeq render_player_sprite
+    loadn r2, #80               
+render_player_sprite:
+    loadn r0, #Characters       
+    add r0, r0, r2
+    loadi r0, r0
     outchar r0, r1
 
 render_player_skip:
@@ -144,6 +149,27 @@ render_player_skip:
     rts
 
 render_enemy:
+    push r0
+    push r1
+    loadn r0, #0
+    store enemy_index, r0
+render_enemies_loop:
+    load r0, enemy_index
+    load r1, enemy_count
+    cmp r0, r1
+    jeg render_enemies_done
+    call enemy_load_slot
+    call render_enemy_one
+    load r0, enemy_index
+    inc r0
+    store enemy_index, r0
+    jmp render_enemies_loop
+render_enemies_done:
+    pop r1
+    pop r0
+    rts
+
+render_enemy_one:
     push r0
     push r1
     push r2
@@ -179,7 +205,31 @@ render_enemy_y_ok:
     loadn r1, #40
     mul r1, r3, r1
     add r1, r1, r2
-    loadn r0, #'x'
+    load r0, enemy_type
+    loadn r3, #0
+    loadn r2, #2                
+    cmp r0, r3
+    jeq render_enemy_sprite
+    loadn r3, #3
+    loadn r2, #10               
+    cmp r0, r3
+    jeq render_enemy_sprite
+    loadn r2, #4                
+    loadn r3, #1
+    cmp r0, r3
+    jeq render_enemy_direction
+    loadn r2, #8                
+render_enemy_direction:
+    load r0, enemy_dir
+    loadn r3, #0
+    cmp r0, r3
+    jeq render_enemy_sprite
+    loadn r3, #80               
+    add r2, r2, r3
+render_enemy_sprite:
+    loadn r0, #Characters
+    add r0, r0, r2
+    loadi r0, r0
     outchar r0, r1
 
 render_enemy_skip:
@@ -214,9 +264,9 @@ render_hud:
     outchar r0, r1
     inc r1
     load r0, score
-    loadn r2, #'0'
-    add r0, r0, r2
-    outchar r0, r1
+    loadn r1, #10
+    loadn r2, #5
+    call render_number
 
     loadn r1, #15
     loadn r0, #'L'
@@ -237,11 +287,53 @@ render_hud:
     loadn r0, #':'
     outchar r0, r1
     load r0, lives
-    loadn r2, #'0'
-    add r0, r0, r2
     loadn r1, #21
+    loadn r2, #1
+    call render_number
+    loadn r1, #28
+    loadn r0, #'F'
     outchar r0, r1
+    inc r1
+    loadn r0, #':'
+    outchar r0, r1
+    loadn r1, #30
+    load r0, game_level
+    call render_number
+    loadn r1, #39
+    loadn r0, #' '
+    load r2, player_run_active
+    outchar r0, r1
+    loadn r0, #1
+    cmp r2, r0
+    jne render_hud_done
+    loadn r0, #'R'
+    outchar r0, r1
+render_hud_done:
+    pop r2
+    pop r1
+    pop r0
+    rts
 
+render_number:
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+render_number_loop:
+    loadn r3, #10
+    mod r4, r0, r3
+    div r0, r0, r3
+    loadn r3, #'0'
+    add r4, r4, r3
+    outchar r4, r1
+    dec r1
+    dec r2
+    loadn r3, #0
+    cmp r2, r3
+    jne render_number_loop
+    pop r4
+    pop r3
     pop r2
     pop r1
     pop r0

@@ -5,8 +5,6 @@
 ; MARIO RAM (Variáveis Globais)
 ; 
 ; Estas variáveis mudam durante a execução do jogo
-; Devem ser incluídas ANTES do main, mas DEPOIS de todas
-; as funções que as usam
 ;════════════════════════════════════════════════════════════
 
 ;════════════════════════════════════════════════════════════
@@ -73,7 +71,7 @@ camera_target_x:    var #1          ; Alvo de câmera (smooth follow)
 map_ptr:            var #1          ; Ponteiro para dados do mapa atual
 map_width:          var #1          ; Largura do mapa em tiles (N)
 map_height:         var #1          ; Altura do mapa em tiles (30)
-map_stride:         var #1          ; N+1: caracteres por linha incluindo terminador
+map_stride:         var #1          
 
 ;════════════════════════════════════════════════════════════
 ; PLACAR E VIDAS
@@ -105,3 +103,14 @@ render_row_ptr:     var #1          ; Ponteiro da linha corrente do mapa durante
 ;════════════════════════════════════════════════════════════
 
 ;========================================================================
+game_won:          var #1
+player_died_frame: var #1
+player_prev_x:     var #1
+player_prev_y:     var #1
+enemy_prev_x:      var #1
+enemy_prev_y:      var #1
+enemy_count:       var #1
+enemy_index:       var #1
+enemy_current_ptr: var #1
+enemy_list:        var #42
+map_data:          var #3600

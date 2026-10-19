@@ -20,6 +20,7 @@ player_handle_input:
     push r0
     push r1
     push r2
+    push r3
 
     ; Cada frame começa sem deslocamento horizontal residual.
     loadn r0, #0
@@ -29,6 +30,8 @@ player_handle_input:
     storei r1, r0
 
     inchar r0
+    load r3, last_key
+    store last_key, r0
 
     loadn r1, #255
     cmp r0, r1
@@ -76,6 +79,9 @@ player_input_jump:
     jmp input_done
 
 player_input_toggle_run:
+    loadn r1, #'s'
+    cmp r3, r1
+    jeq input_done
     load r0, player_run_active
     loadn r1, #0
     cmp r0, r1
@@ -94,6 +100,7 @@ player_run_enable:
     jmp input_done
 
 input_done:
+    pop r3
     pop r2
     pop r1
     pop r0
@@ -205,7 +212,7 @@ player_attempt_jump:
     storei r1, r0
 
     ; Magnitude inicial do salto.
-    loadn r0, #12
+    loadn r0, #15
     loadn r1, #player_vel_y_mag
     storei r1, r0
 
@@ -238,8 +245,14 @@ player_check_ground:
     load r0, player_x
     load r1, player_y
     inc r1
+    load r2, map_height
+    cmp r1, r2
+    jeg player_ground_missing
     call physics_check_collision_tile
-
+    jmp player_ground_store
+player_ground_missing:
+    loadn r2, #0
+player_ground_store:
     loadn r0, #player_on_ground
     storei r0, r2
 

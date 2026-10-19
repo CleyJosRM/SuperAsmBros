@@ -2,7 +2,7 @@
 ;========================================================================
 
 ; Os modulos sao compilados/concatenados separadamente pelo builder.
-# Ordem recomendada:
+; Ordem recomendada:
 ; 00_mario_main.asm
 ; 01_mario_physics.asm
 ; 02_mario_render.asm
@@ -20,140 +20,68 @@ main:
 
 init_game:
     push r0
-    push r1
-    push r2
-
     loadn r0, #1
-    loadn r1, #game_active
-    storei r1, r0
-
+    store game_active, r0
+    store game_level, r0
     loadn r0, #0
-    loadn r1, #score
-    storei r1, r0
-    
+    store score, r0
+    store coins_collected, r0
+    store frame_count, r0
+    store game_won, r0
     loadn r0, #3
-    loadn r1, #lives
-    storei r1, r0
-    
-    loadn r0, #0
-    loadn r1, #coins_collected
-    storei r1, r0
-
-    loadn r0, #0
-    loadn r1, #frame_count
-    storei r1, r0
-
-    loadn r0, #5                ; PLAYER_SPAWN_X
-    loadn r1, #player_x
-    storei r1, r0
-    
-    loadn r0, #25               ; PLAYER_SPAWN_Y (acima do chão na linha 26)
-    loadn r1, #player_y
-    storei r1, r0
-    
-    loadn r0, #0
-    loadn r1, #player_vel_x
-    storei r1, r0
-    
-    loadn r0, #0
-    loadn r1, #player_vel_y
-    storei r1, r0
-    
-    loadn r0, #1                ; spawn já está sobre o chão da linha 26
-    loadn r1, #player_on_ground
-    storei r1, r0
-    
-    loadn r0, #1                ; DIR_RIGHT
-    loadn r1, #player_facing
-    storei r1, r0
-
-    loadn r0, #0
-    loadn r1, #camera_x
-    storei r1, r0
-    
-    loadn r0, #0
-    loadn r1, #camera_y
-    storei r1, r0
-
-    loadn r0, #35               ; ENEMY_SPAWN_X_WORLD
-    loadn r1, #enemy_x
-    storei r1, r0
-    
-    loadn r0, #25               ; ENEMY_SPAWN_Y (acima do chão na linha 26)
-    loadn r1, #enemy_y
-    storei r1, r0
-    
-    loadn r0, #0
-    loadn r1, #enemy_vel_x
-    storei r1, r0
-    
-    loadn r0, #0
-    loadn r1, #enemy_vel_y
-    storei r1, r0
-    
-    loadn r0, #0                ; DIR_LEFT
-    loadn r1, #enemy_dir
-    storei r1, r0
-    
-    loadn r0, #1
-    loadn r1, #enemy_alive
-    storei r1, r0
-
-    loadn r0, #map_data
-    loadn r1, #map_ptr
-    storei r1, r0
-
-    ; Metadados do mapa: preparados para mapas N x 30.
-    loadn r0, #120
-    loadn r1, #map_width
-    storei r1, r0
-    loadn r0, #30
-    loadn r1, #map_height
-    storei r1, r0
-    loadn r0, #121
-    loadn r1, #map_stride
-    storei r1, r0
-
-    ; Estado de velocidade do inimigo (direcao + magnitude).
-    loadn r0, #0
-    loadn r1, #enemy_vel_x_dir
-    storei r1, r0
-    loadn r1, #enemy_vel_y_dir
-    storei r1, r0
-    loadn r1, #enemy_vel_x_mag
-    storei r1, r0
-    loadn r1, #enemy_vel_y_mag
-    storei r1, r0
-
-    pop r2
-    pop r1
+    store lives, r0
+    call map_load_level
+    call player_respawn
     pop r0
     rts
 
 game_loop:
+    loadn r0, #0
+    store player_died_frame, r0
+    load r0, invincibility_timer
+    loadn r1, #0
+    cmp r0, r1
+    jeq game_input
+    dec r0
+    store invincibility_timer, r0
+game_input:
     call player_handle_input
+    load r0, game_active
+    loadn r1, #0
+    cmp r0, r1
+    jeq end_game
     call physics_apply_gravity
     call physics_update_position
+    call check_player_out_of_bounds
+    load r0, player_died_frame
+    loadn r1, #0
+    cmp r0, r1
+    jne game_render
+    call check_player_hazard
+    load r0, player_died_frame
+    cmp r0, r1
+    jne game_render
     call enemy_update
     call check_player_enemy_collision
+    load r0, player_died_frame
+    cmp r0, r1
+    jne game_render
     call check_player_coin_collision
     call check_player_block_collision
-    call check_player_out_of_bounds
+    call check_player_powerup_collision
+    call check_level_complete
+game_render:
     call camera_follow_player
     call render_frame
     call frame_wait
 
-    ; Contador global de frames, mantido fora dos modulos de renderizacao.
     load r0, frame_count
     inc r0
-    loadn r1, #frame_count
-    storei r1, r0
-    
+    store frame_count, r0
     load r1, game_active
     loadn r2, #1
     cmp r1, r2
     jeq game_loop
-    
     jmp end_game
 
 end_game:
@@ -186,7 +114,6 @@ check_player_out_of_bounds:
     load r1, player_y
     
     load r2, map_height
-    dec r2
     cmp r1, r2
     jle out_of_bounds_ok
     
@@ -203,6 +130,15 @@ player_die:
     push r1
     push r2
     
+    load r0, player_died_frame
+    loadn r1, #1
+    cmp r0, r1
+    jeq player_die_end
+    store player_died_frame, r1
+    load r0, game_active
+    loadn r1, #0
+    cmp r0, r1
+    jeq player_die_end
     loadn r0, #lives
     load r1, lives
     dec r1
@@ -210,7 +146,7 @@ player_die:
     
     loadn r2, #0
     cmp r1, r2
-    jle player_die_game_over
+    jeq player_die_game_over
     
     call player_respawn
     jmp player_die_end
@@ -229,27 +165,39 @@ player_die_end:
 player_respawn:
     push r0
     push r1
-    
-    loadn r0, #5                ; PLAYER_SPAWN_X
-    loadn r1, #player_x
-    storei r1, r0
-    
-    loadn r0, #25               ; PLAYER_SPAWN_Y (acima do chão na linha 26)
-    loadn r1, #player_y
-    storei r1, r0
-    
+    loadn r0, #5
+    store player_x, r0
+    store player_prev_x, r0
+    load r1, game_level
+    loadn r0, #1
+    cmp r1, r0
+    jne respawn_castle
+    loadn r0, #27                
+    jmp respawn_y
+respawn_castle:
+    loadn r0, #24                
+respawn_y:
+    store player_y, r0
+    store player_prev_y, r0
     loadn r0, #0
-    loadn r1, #player_vel_x
-    storei r1, r0
-    
-    loadn r0, #0
-    loadn r1, #player_vel_y
-    storei r1, r0
-    
-    loadn r0, #1                ; spawn já está sobre o chão da linha 26
-    loadn r1, #player_on_ground
-    storei r1, r0
-    
+    store player_vel_x, r0
+    store player_vel_y, r0
+    store player_vel_x_mag, r0
+    store player_vel_y_mag, r0
+    store player_vel_y_dir, r0
+    store player_run_active, r0
+    store camera_x, r0
+    store camera_y, r0
+    loadn r0, #255
+    store last_key, r0
+    loadn r0, #1
+    store player_on_ground, r0
+    store player_facing, r0
+    store player_vel_x_dir, r0
+    store player_alive, r0
+    loadn r0, #20
+    store invincibility_timer, r0
+    call enemy_init_level
     pop r1
     pop r0
     rts
@@ -258,6 +206,7 @@ show_game_over_screen:
     push r0
     push r1
     push r2
+    push r3
     
     loadn r0, #' '
     loadn r1, #0
@@ -271,38 +220,25 @@ clear_screen_loop:
     jmp clear_screen_loop
     
 show_game_over_text:
-    loadn r1, #577
-    
-    loadn r0, #'G'
+    loadn r1, #575
+    loadn r2, #message_game_over
+    load r0, game_won
+    loadn r3, #1
+    cmp r0, r3
+    jne end_message_loop
+    loadn r2, #message_victory
+end_message_loop:
+    loadi r0, r2
+    loadn r3, #0
+    cmp r0, r3
+    jeq end_message_done
     outchar r0, r1
     inc r1
-    loadn r0, #'A'
-    outchar r0, r1
-    inc r1
-    loadn r0, #'M'
-    outchar r0, r1
-    inc r1
-    loadn r0, #'E'
-    outchar r0, r1
-    inc r1
-    loadn r0, #' '
-    outchar r0, r1
-    inc r1
-    loadn r0, #'O'
-    outchar r0, r1
-    inc r1
-    loadn r0, #'V'
-    outchar r0, r1
-    inc r1
-    loadn r0, #'E'
-    outchar r0, r1
-    inc r1
-    loadn r0, #'R'
-    outchar r0, r1
-    
+    inc r2
+    jmp end_message_loop
+end_message_done:
+    pop r3
     pop r2
     pop r1
     pop r0
     rts
-
-;========================================================================
