@@ -1,3 +1,7 @@
+;========================================================================
+; >>> INICIO DO ARQUIVO: src/00_mario_main.asm
+;========================================================================
+
 ; >>> INICIO DO ARQUIVO: src/00_mario_main.asm
 ;========================================================================
 
@@ -10,6 +14,8 @@
 ; 04_mario_enemies.asm
 ; 05_mario_blocks.asm
 ; 06_mario_powerups.asm
+; 07_mario_maps.asm
+; 08_mario_score.asm
 ; 98_mario_ram.asm
 ; 99_mario_rom.asm
 
@@ -185,6 +191,7 @@ respawn_y:
     store player_vel_x_mag, r0
     store player_vel_y_mag, r0
     store player_vel_y_dir, r0
+    store player_run_active, r0
     store camera_x, r0
     store camera_y, r0
     loadn r0, #255
@@ -241,6 +248,11 @@ end_message_done:
     pop r1
     pop r0
     rts
+
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: src/01_mario_physics.asm
+;========================================================================
 
 ; >>> INICIO DO ARQUIVO: src/01_mario_physics.asm
 ;========================================================================
@@ -729,6 +741,11 @@ physics_collision_done:
 ; FIM DO MODULO 01_mario_physics
 ;========================================================================
 
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: src/02_mario_render.asm
+;========================================================================
+
 ; >>> INICIO DO ARQUIVO: src/02_mario_render.asm
 ;========================================================================
 
@@ -1030,6 +1047,15 @@ render_hud:
     loadn r1, #30
     load r0, game_level
     call render_number
+    loadn r1, #39
+    loadn r0, #' '
+    load r2, player_run_active
+    outchar r0, r1
+    loadn r0, #1
+    cmp r2, r0
+    jne render_hud_done
+    loadn r0, #'R'
+    outchar r0, r1
 render_hud_done:
     pop r2
     pop r1
@@ -1110,6 +1136,11 @@ camera_done:
     rts
 
 ;========================================================================
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: src/03_mario_player.asm
+;========================================================================
+
 ; >>> INICIO DO ARQUIVO: src/03_mario_player.asm
 ;========================================================================
 ; MODULE: Mario Player Control V12.2
@@ -1165,6 +1196,10 @@ player_handle_input:
     cmp r0, r1
     jeq player_input_jump
 
+    loadn r1, #'s'
+    cmp r0, r1
+    jeq player_input_toggle_run
+
     jmp input_done
 
 player_input_quit:
@@ -1184,6 +1219,27 @@ player_input_right:
 player_input_jump:
     ; Corrida NÃO impede o pulo.
     call player_attempt_jump
+    jmp input_done
+
+player_input_toggle_run:
+    loadn r1, #'s'
+    cmp r3, r1
+    jeq input_done
+    load r0, player_run_active
+    loadn r1, #0
+    cmp r0, r1
+    jeq player_run_enable
+
+    ; Já ativo -> desativa.
+    loadn r0, #0
+    loadn r1, #player_run_active
+    storei r1, r0
+    jmp input_done
+
+player_run_enable:
+    loadn r0, #1
+    loadn r1, #player_run_active
+    storei r1, r0
     jmp input_done
 
 input_done:
@@ -1207,9 +1263,17 @@ player_move_left:
     loadn r1, #player_vel_x_dir
     storei r1, r0
 
+    load r0, player_run_active
+    loadn r1, #1
+    cmp r0, r1
+    jeq player_left_run
+
 player_left_normal:
     loadn r0, #1
     jmp player_left_store_mag
+
+player_left_run:
+    loadn r0, #2
 
 player_left_store_mag:
     loadn r1, #player_vel_x_mag
@@ -1243,9 +1307,17 @@ player_move_right:
     loadn r1, #player_vel_x_dir
     storei r1, r0
 
+    load r0, player_run_active
+    loadn r1, #1
+    cmp r0, r1
+    jeq player_right_run
+
 player_right_normal:
     loadn r0, #1
     jmp player_right_store_mag
+
+player_right_run:
+    loadn r0, #2
 
 player_right_store_mag:
     loadn r1, #player_vel_x_mag
@@ -1333,6 +1405,11 @@ player_ground_store:
     rts
 
 ;========================================================================
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: src/04_mario_enemies.asm
+;========================================================================
+
 ; MODULE: Mario Enemies
 
 enemy_init_level:
@@ -1636,10 +1713,8 @@ enemy_intervals_ready:
     loadn r1, #0
     sub r1, r1, r0
     store player_vel_y, r1
-    load r0, score
-    loadn r1, #500
-    add r0, r0, r1
-    store score, r0
+    loadn r0, #500
+    call scoreAdd
     jmp enemy_contact_done
 player_enemy_kill_player:
     call player_die
@@ -1713,6 +1788,11 @@ enemy_store_slot:
     pop r1
     rts
 
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: src/05_mario_blocks.asm
+;========================================================================
+
 ; MODULE: Mario Blocks
 
 check_player_coin_collision:
@@ -1770,15 +1850,11 @@ block_hit_done:
 
 block_add_coin:
     push r0
-    push r1
     load r0, coins_collected
     inc r0
     store coins_collected, r0
-    load r0, score
-    loadn r1, #100
-    add r0, r0, r1
-    store score, r0
-    pop r1
+    loadn r0, #100
+    call scoreAdd
     pop r0
     rts
 
@@ -1807,6 +1883,11 @@ map_clear_done:
     pop r0
     rts
 
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: src/06_mario_powerups.asm
+;========================================================================
+
 ; MODULE: Mario Power-ups
 check_player_powerup_collision:
     push r0
@@ -1821,10 +1902,8 @@ check_player_powerup_collision:
     cmp r2, r0
     jne powerup_no_collision
     call map_clear_player_tile
-    load r0, score
-    loadn r1, #500
-    add r0, r0, r1
-    store score, r0
+    loadn r0, #500
+    call scoreAdd
 powerup_no_collision:
     pop r2
     pop r1
@@ -1838,6 +1917,11 @@ powerup_give_extra_life:
     store lives, r0
     pop r0
     rts
+
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: src/07_mario_maps.asm
+;========================================================================
 
 
 map_load_level:
@@ -2004,6 +2088,56 @@ map_level_done:
     pop r0
     rts
 
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: src/08_mario_score.asm
+;========================================================================
+
+; módulo de pontuação: os outros módulos alteram o score só por estas rotinas
+; entrada: r0 = pontos; nenhum registrador é alterado
+
+; soma r0 ao score, parando em 65535 (maior valor de 16 bits)
+scoreAdd:
+    push r1
+    push r2
+    load r1, score
+    loadn r2, #65535
+    sub r2, r2, r1
+    ; comparamos com o espaço que falta em vez de somar direto, para não depender do carry
+    cmp r0, r2
+    jgr scoreAddSaturate
+    add r1, r1, r0
+    store score, r1
+    jmp scoreAddDone
+scoreAddSaturate:
+    loadn r1, #65535
+    store score, r1
+scoreAddDone:
+    pop r2
+    pop r1
+    rts
+
+; subtrai r0 do score, parando em 0
+scoreSub:
+    push r1
+    load r1, score
+    cmp r0, r1
+    jgr scoreSubZero
+    sub r1, r1, r0
+    store score, r1
+    jmp scoreSubDone
+scoreSubZero:
+    loadn r1, #0
+    store score, r1
+scoreSubDone:
+    pop r1
+    rts
+
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: data/98_mario_ram.asm
+;========================================================================
+
 ; >>> INICIO DO ARQUIVO: data/98_mario_ram.asm
 ;========================================================================
 
@@ -2036,6 +2170,7 @@ player_vel_y_dir:   var #1          ; 0=baixo, 1=cima
 player_vel_y_mag:   var #1          ; magnitude vertical
 player_on_ground:   var #1          ; 1 = no chão, 0 = no ar
 player_facing:      var #1          ; 0 = left, 1 = right
+player_run_active:  var #1          ; 0 = corrida off, 1 = corrida on (toggle)
 player_alive:       var #1          ; 1 = vivo, 0 = morto
 
 ;════════════════════════════════════════════════════════════
@@ -2119,6 +2254,11 @@ enemy_index:       var #1
 enemy_current_ptr: var #1
 enemy_list:        var #42
 map_data:          var #3600
+
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: data/99_mario_rom.asm
+;========================================================================
 
 
 level_map_table: var #6
@@ -2213,6 +2353,12 @@ enemy_spawns_2: var #30
 message_game_over: string "GAME OVER"
 message_victory:   string "VOCE VENCEU!"
 
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: maps/Nivel1-1.asm
+;========================================================================
+
+call printNivel11Screen
 
 Nivel11 : var #1200
   ;Linha 0
@@ -3501,6 +3647,12 @@ printNivel11Screen:
   pop R0
   rts
 
+;========================================================================
+; >>> INICIO DO ARQUIVO: maps/Nivel1-2.asm
+;========================================================================
+
+call printNivel12Screen
+
 Nivel12 : var #1200
   ;Linha 0
   static Nivel12 + #0, #3967
@@ -4787,6 +4939,12 @@ printNivel12Screen:
   pop R1
   pop R0
   rts
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: maps/Nivel1-3.asm
+;========================================================================
+
+call printNivel13Screen
 
 Nivel13 : var #1200
   ;Linha 0
@@ -6075,6 +6233,12 @@ printNivel13Screen:
   pop R0
   rts
 
+;========================================================================
+; >>> INICIO DO ARQUIVO: maps/NivelFinal-1.asm
+;========================================================================
+
+call printNivelFinal1Screen
+
 NivelFinal1 : var #1200
   ;Linha 0
   static NivelFinal1 + #0, #3967
@@ -7361,6 +7525,12 @@ printNivelFinal1Screen:
   pop R1
   pop R0
   rts
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: maps/NivelFinal-2.asm
+;========================================================================
+
+call printNivelFinal2Screen
 
 NivelFinal2 : var #1200
   ;Linha 0
@@ -8649,6 +8819,12 @@ printNivelFinal2Screen:
   pop R0
   rts
 
+;========================================================================
+; >>> INICIO DO ARQUIVO: maps/NivelFinal-3.asm
+;========================================================================
+
+call printNivelFinal3Screen
+
 NivelFinal3 : var #1200
   ;Linha 0
   static NivelFinal3 + #0, #3967
@@ -9935,6 +10111,11 @@ printNivelFinal3Screen:
   pop R1
   pop R0
   rts
+
+;========================================================================
+; >>> INICIO DO ARQUIVO: data/Characters.asm
+;========================================================================
+
 Characters : var #1200
   ;Linha 0
   static Characters + #0, #2327
@@ -11221,3 +11402,4 @@ printCharactersScreen:
   pop R1
   pop R0
   rts
+

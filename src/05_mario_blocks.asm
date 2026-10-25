@@ -55,15 +55,11 @@ block_hit_done:
 
 block_add_coin:
     push r0
-    push r1
     load r0, coins_collected
     inc r0
     store coins_collected, r0
-    load r0, score
-    loadn r1, #100
-    add r0, r0, r1
-    store score, r0
-    pop r1
+    loadn r0, #100
+    call scoreAdd
     pop r0
     rts
 

@@ -301,10 +301,8 @@ enemy_intervals_ready:
     loadn r1, #0
     sub r1, r1, r0
     store player_vel_y, r1
-    load r0, score
-    loadn r1, #500
-    add r0, r0, r1
-    store score, r0
+    loadn r0, #500
+    call scoreAdd
     jmp enemy_contact_done
 player_enemy_kill_player:
     call player_die

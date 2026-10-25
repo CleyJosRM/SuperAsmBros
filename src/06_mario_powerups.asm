@@ -12,10 +12,8 @@ check_player_powerup_collision:
     cmp r2, r0
     jne powerup_no_collision
     call map_clear_player_tile
-    load r0, score
-    loadn r1, #500
-    add r0, r0, r1
-    store score, r0
+    loadn r0, #500
+    call scoreAdd
 powerup_no_collision:
     pop r2
     pop r1

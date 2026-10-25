@@ -12,8 +12,17 @@ int main() {
         "src/04_mario_enemies.asm",
         "src/05_mario_blocks.asm",
         "src/06_mario_powerups.asm",
+        "src/07_mario_maps.asm",
+        "src/08_mario_score.asm",
         "data/98_mario_ram.asm",
-        "data/99_mario_rom.asm"
+        "data/99_mario_rom.asm",
+        "maps/Nivel1-1.asm",
+        "maps/Nivel1-2.asm",
+        "maps/Nivel1-3.asm",
+        "maps/NivelFinal-1.asm",
+        "maps/NivelFinal-2.asm",
+        "maps/NivelFinal-3.asm",
+        "data/Characters.asm"
     };
     
     int num_arquivos = sizeof(arquivos) / sizeof(arquivos[0]);

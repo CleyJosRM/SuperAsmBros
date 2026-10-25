@@ -10,6 +10,8 @@
 ; 04_mario_enemies.asm
 ; 05_mario_blocks.asm
 ; 06_mario_powerups.asm
+; 07_mario_maps.asm
+; 08_mario_score.asm
 ; 98_mario_ram.asm
 ; 99_mario_rom.asm
 
