@@ -90,3 +90,12 @@ enemy_spawns_2: var #30
 
 message_game_over: string "GAME OVER"
 message_victory:   string "VOCE VENCEU!"
+messagePause:      string "PAUSADO"
+messageHelpMove:  string "A/D: MOVER  W: PULAR"
+messageHelpRun:   string "S: CORRER (LIGA/DESLIGA)"
+messageHelpPause: string "P: CONTINUAR  Q: SAIR"
+messageScore:      string "SCORE:"
+messageRestart:    string "R: JOGAR DE NOVO"
+messageTitle:      string "SUPER ASM BROS"
+messageHelpKeys:  string "P: PAUSAR  Q: SAIR"
+messagePressKey:  string "APERTE QUALQUER TECLA"

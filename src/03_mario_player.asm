@@ -41,6 +41,16 @@ player_handle_input:
     cmp r0, r1
     jeq player_input_quit
 
+    loadn r1, #'p'
+    cmp r0, r1
+    jeq playerInputTogglePause
+
+    ; pausado: so 'p' e 'q' valem, para nao enfileirar pulo/movimento
+    load r1, game_paused
+    loadn r2, #1
+    cmp r1, r2
+    jeq input_done
+
     loadn r1, #'a'
     cmp r0, r1
     jeq player_input_left
@@ -97,6 +107,17 @@ player_run_enable:
     loadn r0, #1
     loadn r1, #player_run_active
     storei r1, r0
+    jmp input_done
+
+; 'p' alterna a pausa; r3 = tecla anterior evita repeticao (igual ao 's')
+playerInputTogglePause:
+    loadn r1, #'p'
+    cmp r3, r1
+    jeq input_done
+    load r0, game_paused
+    loadn r1, #1
+    xor r0, r0, r1
+    store game_paused, r0
     jmp input_done
 
 input_done:
