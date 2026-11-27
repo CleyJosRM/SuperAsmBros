@@ -1,3 +1,6 @@
+-- Processador Versao 4: 06/08/2025
+-- Video com 256 cores e tela de 40 colunas por 30 linhas
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
