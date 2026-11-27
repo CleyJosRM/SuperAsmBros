@@ -20,6 +20,10 @@
 ; 99_mario_rom.asm
 
 
+; ponto de entrada: mostra a tela de controles uma vez
+; (o reinicio com 'R' volta direto para main, sem passar pela tela)
+start:
+    call showTitleScreen
 main:
     call init_game
     jmp game_loop
@@ -34,6 +38,7 @@ init_game:
     store coins_collected, r0
     store frame_count, r0
     store game_won, r0
+    store game_paused, r0
     loadn r0, #3
     store lives, r0
     call map_load_level
@@ -56,6 +61,16 @@ game_input:
     loadn r1, #0
     cmp r0, r1
     jeq end_game
+    load r0, game_paused
+    loadn r1, #1
+    cmp r0, r1
+    jne gameRunning
+    ; pausado: desenha o aviso, espera e volta a ler o teclado
+    ; (nao passa pelo contador de invencibilidade nem pelo frame_count)
+    call showPauseScreen
+    call frame_wait
+    jmp game_input
+gameRunning:
     call physics_apply_gravity
     call physics_update_position
     call check_player_out_of_bounds
@@ -92,7 +107,13 @@ game_render:
 
 end_game:
     call show_game_over_screen
-    halt
+    call showRestartPrompt
+endGameWait:
+    inchar r0
+    loadn r1, #'r'
+    cmp r0, r1
+    jne endGameWait
+    jmp main
 
 frame_wait:
     push r0
@@ -244,6 +265,125 @@ end_message_loop:
     jmp end_message_loop
 end_message_done:
     pop r3
+    pop r2
+    pop r1
+    pop r0
+    rts
+
+; imprime uma string terminada em 0 na tela
+; entrada: r1 = posicao na tela (0-1199), r2 = endereco da string
+; nenhum registrador e alterado
+printString:
+    push r0
+    push r1
+    push r2
+    push r3
+    loadn r3, #0
+printStringLoop:
+    loadi r0, r2
+    cmp r0, r3
+    jeq printStringDone
+    outchar r0, r1
+    inc r1
+    inc r2
+    jmp printStringLoop
+printStringDone:
+    pop r3
+    pop r2
+    pop r1
+    pop r0
+    rts
+
+; aviso de pausa com a lista de comandos (o proximo render_frame apaga tudo)
+showPauseScreen:
+    push r1
+    push r2
+    loadn r1, #496
+    loadn r2, #messagePause
+    call printString
+    loadn r1, #570
+    loadn r2, #messageHelpMove
+    call printString
+    loadn r1, #608
+    loadn r2, #messageHelpRun
+    call printString
+    loadn r1, #649
+    loadn r2, #messageHelpPause
+    call printString
+    pop r2
+    pop r1
+    rts
+
+; mostra o score final e como reiniciar (chamada logo apos a tela de game over)
+showRestartPrompt:
+    push r0
+    push r1
+    push r2
+    loadn r1, #654
+    loadn r2, #messageScore
+    call printString
+    load r0, score
+    loadn r1, #664
+    loadn r2, #5
+    call render_number
+    loadn r1, #732
+    loadn r2, #messageRestart
+    call printString
+    pop r2
+    pop r1
+    pop r0
+    rts
+
+; apaga a tela inteira
+clearScreen:
+    push r0
+    push r1
+    push r2
+    loadn r0, #' '
+    loadn r1, #0
+    loadn r2, #1200
+clearAllLoop:
+    cmp r1, r2
+    jeg clearAllDone
+    outchar r0, r1
+    inc r1
+    jmp clearAllLoop
+clearAllDone:
+    pop r2
+    pop r1
+    pop r0
+    rts
+
+; tela inicial: titulo + comandos; espera uma tecla e depois que ela seja solta
+showTitleScreen:
+    push r0
+    push r1
+    push r2
+    call clearScreen
+    loadn r1, #253
+    loadn r2, #messageTitle
+    call printString
+    loadn r1, #410
+    loadn r2, #messageHelpMove
+    call printString
+    loadn r1, #448
+    loadn r2, #messageHelpRun
+    call printString
+    loadn r1, #491
+    loadn r2, #messageHelpKeys
+    call printString
+    loadn r1, #650
+    loadn r2, #messagePressKey
+    call printString
+    loadn r1, #255
+titleWaitPress:
+    inchar r0
+    cmp r0, r1
+    jeq titleWaitPress
+titleWaitRelease:
+    inchar r0
+    cmp r0, r1
+    jne titleWaitRelease
     pop r2
     pop r1
     pop r0
@@ -1047,6 +1187,16 @@ render_hud:
     loadn r1, #30
     load r0, game_level
     call render_number
+    loadn r1, #32
+    loadn r0, #'C'
+    outchar r0, r1
+    inc r1
+    loadn r0, #':'
+    outchar r0, r1
+    load r0, coins_collected
+    loadn r1, #36
+    loadn r2, #3
+    call render_number
     loadn r1, #39
     loadn r0, #' '
     load r2, player_run_active
@@ -1184,6 +1334,16 @@ player_handle_input:
     cmp r0, r1
     jeq player_input_quit
 
+    loadn r1, #'p'
+    cmp r0, r1
+    jeq playerInputTogglePause
+
+    ; pausado: so 'p' e 'q' valem, para nao enfileirar pulo/movimento
+    load r1, game_paused
+    loadn r2, #1
+    cmp r1, r2
+    jeq input_done
+
     loadn r1, #'a'
     cmp r0, r1
     jeq player_input_left
@@ -1240,6 +1400,17 @@ player_run_enable:
     loadn r0, #1
     loadn r1, #player_run_active
     storei r1, r0
+    jmp input_done
+
+; 'p' alterna a pausa; r3 = tecla anterior evita repeticao (igual ao 's')
+playerInputTogglePause:
+    loadn r1, #'p'
+    cmp r3, r1
+    jeq input_done
+    load r0, game_paused
+    loadn r1, #1
+    xor r0, r0, r1
+    store game_paused, r0
     jmp input_done
 
 input_done:
@@ -1904,17 +2075,25 @@ check_player_powerup_collision:
     call map_clear_player_tile
     loadn r0, #500
     call scoreAdd
+    call powerup_give_extra_life
 powerup_no_collision:
     pop r2
     pop r1
     pop r0
     rts
 
+; soma 1 vida, parando em 9 (o HUD mostra so 1 digito)
 powerup_give_extra_life:
     push r0
+    push r1
     load r0, lives
+    loadn r1, #9
+    cmp r0, r1
+    jeg powerupLifeDone
     inc r0
     store lives, r0
+powerupLifeDone:
+    pop r1
     pop r0
     rts
 
@@ -2352,6 +2531,15 @@ enemy_spawns_2: var #30
 
 message_game_over: string "GAME OVER"
 message_victory:   string "VOCE VENCEU!"
+messagePause:      string "PAUSADO"
+messageHelpMove:  string "A/D: MOVER  W: PULAR"
+messageHelpRun:   string "S: CORRER (LIGA/DESLIGA)"
+messageHelpPause: string "P: CONTINUAR  Q: SAIR"
+messageScore:      string "SCORE:"
+messageRestart:    string "R: JOGAR DE NOVO"
+messageTitle:      string "SUPER ASM BROS"
+messageHelpKeys:  string "P: PAUSAR  Q: SAIR"
+messagePressKey:  string "APERTE QUALQUER TECLA"
 
 
 ;========================================================================

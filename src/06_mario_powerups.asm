@@ -14,16 +14,24 @@ check_player_powerup_collision:
     call map_clear_player_tile
     loadn r0, #500
     call scoreAdd
+    call powerup_give_extra_life
 powerup_no_collision:
     pop r2
     pop r1
     pop r0
     rts
 
+; soma 1 vida, parando em 9 (o HUD mostra so 1 digito)
 powerup_give_extra_life:
     push r0
+    push r1
     load r0, lives
+    loadn r1, #9
+    cmp r0, r1
+    jeg powerupLifeDone
     inc r0
     store lives, r0
+powerupLifeDone:
+    pop r1
     pop r0
     rts

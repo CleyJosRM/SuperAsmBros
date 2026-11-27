@@ -299,6 +299,16 @@ render_hud:
     loadn r1, #30
     load r0, game_level
     call render_number
+    loadn r1, #32
+    loadn r0, #'C'
+    outchar r0, r1
+    inc r1
+    loadn r0, #':'
+    outchar r0, r1
+    load r0, coins_collected
+    loadn r1, #36
+    loadn r2, #3
+    call render_number
     loadn r1, #39
     loadn r0, #' '
     load r2, player_run_active
